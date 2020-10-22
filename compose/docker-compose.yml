@@ -1,0 +1,45 @@
+version: '3'
+services:
+
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    environment:
+      - IPFS_PROFILE=server
+      - IPFS_PATH=/ipfsdata
+    volumes:
+      - ./data/ipfs:/ipfsdata
+    ports:
+      - "4001:4001"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:5001:5001"
+
+  app-service:
+    image: app-service-image:latest
+    restart: always
+    depends_on:
+      - ipfs
+      - algod 
+    environment:
+      - ALGOD_ENVIRONMENT=testnet
+      - dw.ipfsNetworkHost=ipfs
+      - ipfsNetworkPort=5001
+#      - algodNetworkHost=algod
+#      - algodNetowrkPort=8095
+    volumes:
+      - ./data/app-service:/app-service
+    ports:
+      - "127.0.0.1:8090:8090"
+      - "127.0.0.1:8091:8091"
+
+  algod:
+    image: algorand/algod_stable_2.0.2 
+    restart: always
+    environment:
+      - ALGORAND_NETWORK=testnet
+    volumes:
+      - ./data/algod-testnet:/algod
+    ports:
+      - "8095:8090"
+      - "8096:8090"
+  

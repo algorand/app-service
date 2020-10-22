@@ -1,0 +1,182 @@
+// CASE 0 Allow two self-transfer of zero to the contract to allocate
+// for receiving yes/no asset transfers. A lease is required so that
+// init can only happen once.
+Case0:
+global GroupSize
+int 2
+==
+YesAsset:
+gtxn 0 TypeEnum
+int 4
+==
+&&
+gtxn 0 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 0 XferAsset
+int TMPL_YES_ASSET
+==
+&&
+gtxn 0 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 0 AssetReceiver
+txn Sender
+==
+&&
+gtxn 0 Fee
+int TMPL_MAX_SELF_FEE
+<=
+&&
+gtxn 0 AssetAmount
+int 0
+==
+&&
+gtxn 0 FirstValid
+int TMPL_INIT_START_RND
+==
+&&
+gtxn 0 LastValid
+int TMPL_INIT_END_RND
+==
+&&
+gtxn 0 Lease
+byte64 TMPL_INIT_LEASE_YES
+==
+&&
+NoAsset:
+gtxn 1 TypeEnum
+int 4
+==
+&&
+gtxn 1 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 1 XferAsset
+int TMPL_NO_ASSET
+==
+&&
+gtxn 1 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 1 AssetReceiver
+txn Sender
+==
+&&
+gtxn 1 Fee
+int TMPL_MAX_SELF_FEE
+<=
+&&
+gtxn 1 AssetAmount
+int 0
+==
+&&
+gtxn 1 FirstValid
+int TMPL_INIT_START_RND
+==
+&&
+gtxn 1 LastValid
+int TMPL_INIT_END_RND
+==
+&&
+gtxn 1 Lease
+byte64 TMPL_INIT_LEASE_NO
+==
+// CASE 1:
+Case1:
+// Assert that this is a group of size three.
+global GroupSize
+int 3
+==
+// Assert that we are the third transaction in the group
+txn GroupIndex
+int 2
+==
+&&
+// The first transaction is an AssetTransfer of some number
+// of winning tokens into the pool. The notes field of that txn
+// contains the signed oracle statement.
+gtxn 0 TypeEnum
+int 4
+==
+&&
+gtxn 0 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 0 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 0 AssetReceiver
+txn Sender
+==
+&&
+// Check the oracle signature
+gtxn 0 Note
+arg_0
+addr TMPL_ORACLE
+ed25519verify
+&&
+// Check that the asset we're being transferred corresponds
+// with the oracle's statement
+// Oracle yes && XferAsset == YES_ASSET
+gtxn 0 XferAsset
+int TMPL_YES_ASSET
+==
+gtxn 0 Note
+byte64 TMPL_YES_STMT
+==
+&&
+// Oracle no && XferAsset == NO_ASSET
+gtxn 0 XferAsset
+int TMPL_NO_ASSET
+==
+gtxn 0 Note
+byte64 TMPL_NO_STMT
+==
+&&
+||
+// The second transaction is a payment that pays for the transaction
+// fee for the third transaction. All we care about is the recipient
+// and the amount.
+gtxn 1 TypeEnum
+int 1
+==
+&&
+gtxn 1 Receiver
+txn Sender
+==
+&&
+gtxn 1 Amount
+gtxn 2 Fee
+==
+&&
+// The third transaction is Payment from this escrow in the
+// amount of 1 algo per token to the person who transferred us
+// the asset in the first txn. We don't check the fee because
+// we were just transferred enough money for the fee in gtxn 1.
+gtxn 2 TypeEnum
+int 1
+==
+// Transfer 1000000 microAlgos per unit of asset transferred
+gtxn 2 Amount
+gtxn 0 AssetAmount
+int 1000000
+*
+==
+&&
+gtxn 2 CloseRemainderTo
+global ZeroAddress
+==
+&&
+gtxn 2 Receiver
+gtxn 0 Sender
+==
+&&
+done:
+||

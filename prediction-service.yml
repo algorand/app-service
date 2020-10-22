@@ -1,0 +1,9 @@
+server:
+  applicationConnectors:
+  - type: http
+    port: 8084
+  adminConnectors:
+  - type: http
+    port: 8085
+destAccount: ${DEST_ACCOUNT}
+sourceAccount: ${SOURCE_ACCOUNT_MNEMONIC}

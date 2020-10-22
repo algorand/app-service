@@ -1,0 +1,231 @@
+// CASE 0 Allow two self-transfer of zero to the contract to allocate
+// for receiving yes/no asset transfers. A lease is required so that
+// init can only happen once.
+Case0:
+global GroupSize
+int 2
+==
+YesAsset:
+gtxn 0 TypeEnum
+int 4
+==
+&&
+gtxn 0 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 0 XferAsset
+int TMPL_YES_ASSET
+==
+&&
+gtxn 0 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 0 AssetReceiver
+txn Sender
+==
+&&
+gtxn 0 Fee
+int TMPL_MAX_SELF_FEE
+<=
+&&
+gtxn 0 AssetAmount
+int 0
+==
+&&
+gtxn 0 FirstValid
+int TMPL_INIT_START_RND
+==
+&&
+gtxn 0 LastValid
+int TMPL_INIT_END_RND
+==
+&&
+gtxn 0 Lease
+byte64 TMPL_INIT_LEASE_YES
+==
+&&
+NoAsset:
+gtxn 1 TypeEnum
+int 4
+==
+&&
+gtxn 1 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 1 XferAsset
+int TMPL_NO_ASSET
+==
+&&
+gtxn 1 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 1 AssetReceiver
+txn Sender
+==
+&&
+gtxn 1 Fee
+int TMPL_MAX_SELF_FEE
+<=
+&&
+gtxn 1 AssetAmount
+int 0
+==
+&&
+gtxn 1 FirstValid
+int TMPL_INIT_START_RND
+==
+&&
+gtxn 1 LastValid
+int TMPL_INIT_END_RND
+==
+&&
+gtxn 1 Lease
+byte64 TMPL_INIT_LEASE_NO
+==
+Case 1:
+// First, assert that this is a group of size 6. The first
+// two transactions will be payment txns to the pool. The second
+// two transactions will be payment txns to the escrow (to pay the
+// txn fee). The final two txns will be asset txfers of the yes
+// tokens and no tokens.
+global GroupSize
+int 6
+==
+// Next, assert that we are in the fifth or sixth position
+// in the group. Only txns 5 and 6 should be from this script account.
+txn GroupIndex
+int 4
+==
+txn GroupIndex
+int 5
+==
+||
+&&
+// Next, assert that the first two transactions are payment txns
+// that are paying into the pool address (to buy yes/no tokens)
+gtxn 0 TypeEnum
+int 1
+==
+&&
+gtxn 1 TypeEnum
+int 1
+==
+&&
+gtxn 0 Receiver
+addr TMPL_POOL
+==
+&&
+gtxn 1 Receiver
+addr TMPL_POOL
+==
+&&
+// Now, assert that the third and fourth transactions are payments
+// that are paying into this contract acct (`txn Sender`). Assert that
+// the third pays for gtxn 4's fee and the fourth pays for gtxn 5's fee
+gtxn 2 TypeEnum
+int 1
+==
+&&
+gtxn 3 TypeEnum
+int 1
+==
+&&
+gtxn 2 Receiver
+txn Sender
+==
+&&
+gtxn 3 Receiver
+txn Sender
+==
+&&
+gtxn 2 Amount
+gtxn 4 Fee
+==
+&&
+gtxn 3 Amount
+gtxn 5 Fee
+==
+&&
+// Next, assert that the sum of the first two payment amts is equal to
+// 0 mod 1,000,000 microAlgos, since each yes/no pair costs one algo
+gtxn 0 Amount
+gtxn 1 Amount
++
+int 1000000
+%
+int 0
+==
+&&
+// Next, assert that the fifth and sixth transactions are AssetTransfer
+// transactions with no AssetCloseTo set, and that we're the sender.
+// AssetSender should also be blank since this isn't a clawback.
+gtxn 4 TypeEnum
+int 4
+==
+&&
+gtxn 5 TypeEnum
+int 4
+==
+&&
+gtxn 4 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 5 AssetCloseTo
+global ZeroAddress
+==
+&&
+gtxn 4 AssetSender
+global ZeroAddress
+==
+&&
+gtxn 5 AssetSender
+global ZeroAddress
+==
+&&
+// Next, assert that the fifth and sixth transactions are sending yes
+// and no tokens, respectively
+gtxn 4 XferAsset
+int TMPL_YES_ASSET
+==
+&&
+gtxn 5 XferAsset
+int TMPL_NO_ASSET
+==
+&&
+// Sum the amounts of the first two txns, divide by 1,000,000, and
+// allow the transfer of that many yes tokens to the sender of the
+// first txn and that many no tokens to the sender of the second txn
+gtxn 0 Amount
+gtxn 1 Amount
++
+int 1000000
+/
+// Store sum/1000000 to register
+store 0
+// Load sum/1000000 from register
+load 0
+gtxn 4 AssetAmount
+==
+&&
+// Load sum/1000000 from register
+load 0
+gtxn 5 AssetAmount
+==
+&&
+// Assert that the receiver of the yes tokens is the account that sent
+// the first txn and the receiver of the no tokens is the account that
+// sent the second txn
+gtxn 4 AssetReceiver
+gtxn 0 Sender
+==
+&&
+gtxn 5 AssetReceiver
+gtxn 1 Sender
+==
+&&
+||

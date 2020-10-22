@@ -1,0 +1,16 @@
+server:
+  applicationConnectors:
+  - type: http
+    port: 8090
+  adminConnectors:
+  - type: http
+    port: 8091
+algodNetworkHost: ${ALGOD_HOST}
+algodNetworkPort: ${ALGOD_PORT}
+algodApiToken: ${ALGOD_API_KEY}
+ipfsNetworkHost: "localhost"
+ipfsNetworkPort: "5001"
+destAccount: ${DEST_ACCOUNT}
+sourceAccount: ${SOURCE_ACCOUNT_MNEMONIC}
+logging:
+  level: INFO
